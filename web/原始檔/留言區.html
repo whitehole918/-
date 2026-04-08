@@ -76,9 +76,9 @@
 <script type="module">
   // 🔹 引入 Firebase SDK
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-database.js";
 
-  // 🔹 使用你提供的 firebaseConfig
+  // 🔹 Firebase 設定
   const firebaseConfig = {
     apiKey: "AIzaSyAn3Ff0Mv-uVVbm9QmASoF5-YHoTSzhykw",
     authDomain: "kdhr-message-board.firebaseapp.com",
@@ -96,36 +96,43 @@
   const form = document.getElementById("messageForm");
   const messagesList = document.getElementById("messagesList");
 
-  // 🔹 發送留言
+  // 🔹 發送留言（已修正格式）
   form.addEventListener("submit", e => {
     e.preventDefault();
+
     const name = document.getElementById("name").value.trim();
     const message = document.getElementById("message").value.trim();
-    if (!name || !message) return;
-push(ref(db, "messages"), {
-  name: name,
-  text: message,
-  timestamp: Date.now()
-});
 
-  // 🔹 顯示留言列表
+    if (!name || !message) return;
+
+    push(ref(db, "messages"), {
+      name: name,
+      text: message,
+      timestamp: Date.now()
+    });
+
+    form.reset();
+  });
+
+  // 🔹 顯示留言（安全寫法，避免 XSS）
   onValue(ref(db, "messages"), snapshot => {
     messagesList.innerHTML = "";
+
     snapshot.forEach(child => {
+      const data = child.val();
+
       const li = document.createElement("li");
-      li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-start");
+      li.classList.add("list-group-item");
 
       const text = document.createElement("div");
-      text.innerHTML = `<strong>${child.val().name}</strong>: ${child.val().message}`;
+
+      const strong = document.createElement("strong");
+      strong.textContent = data.name;
+
+      text.appendChild(strong);
+      text.appendChild(document.createTextNode(": " + data.text));
+
       li.appendChild(text);
-
-      // 🔹 刪除按鈕（只有你管理用）
-      const deleteBtn = document.createElement("button");
-      deleteBtn.classList.add("btn", "btn-sm", "btn-danger");
-      deleteBtn.textContent = "刪除";
-      deleteBtn.addEventListener("click", () => remove(ref(db, "messages/" + child.key)));
-      li.appendChild(deleteBtn);
-
       messagesList.appendChild(li);
     });
   });
