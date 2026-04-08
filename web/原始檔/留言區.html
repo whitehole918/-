@@ -74,11 +74,9 @@
 </div>
 
 <script type="module">
-  // 🔹 引入 Firebase SDK
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
   import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-database.js";
 
-  // 🔹 Firebase 設定
   const firebaseConfig = {
     apiKey: "AIzaSyAn3Ff0Mv-uVVbm9QmASoF5-YHoTSzhykw",
     authDomain: "kdhr-message-board.firebaseapp.com",
@@ -96,7 +94,7 @@
   const form = document.getElementById("messageForm");
   const messagesList = document.getElementById("messagesList");
 
-  // 🔹 發送留言（已修正格式）
+  // ✅ 發送留言（新格式）
   form.addEventListener("submit", e => {
     e.preventDefault();
 
@@ -114,25 +112,38 @@
     form.reset();
   });
 
-  // 🔹 顯示留言（安全寫法，避免 XSS）
+  // ✅ 顯示留言（支援舊資料 + 新資料）
   onValue(ref(db, "messages"), snapshot => {
     messagesList.innerHTML = "";
+
+    const messages = [];
 
     snapshot.forEach(child => {
       const data = child.val();
 
+      messages.push({
+        name: data.name || "匿名",
+        text: data.text || data.message || "",
+        timestamp: data.timestamp || 0
+      });
+    });
+
+    // ✅ 依時間排序（新 → 舊）
+    messages.sort((a, b) => b.timestamp - a.timestamp);
+
+    messages.forEach(msg => {
       const li = document.createElement("li");
       li.classList.add("list-group-item");
 
-      const text = document.createElement("div");
+      const textDiv = document.createElement("div");
 
       const strong = document.createElement("strong");
-      strong.textContent = data.name;
+      strong.textContent = msg.name;
 
-      text.appendChild(strong);
-      text.appendChild(document.createTextNode(": " + data.text));
+      textDiv.appendChild(strong);
+      textDiv.appendChild(document.createTextNode(": " + msg.text));
 
-      li.appendChild(text);
+      li.appendChild(textDiv);
       messagesList.appendChild(li);
     });
   });
