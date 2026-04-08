@@ -1,58 +1,3 @@
-<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-    <title>工藤晴香-粉絲自製粉專</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-
-   <style>
-  /* Navbar 統一樣式 */
-  .navbar {
-    background-color: #180760 !important;
-  }
-  .navbar-brand {
-    color: #fff !important;
-    font-weight: bold;
-  }
-  .nav-link {
-    color: #fff !important;
-  }
-  .nav-link:hover {
-    color: #FF4C4C !important;
-  }
-  /* 漢堡按鈕白色 */
-  .navbar-toggler {
-    border-color: #fff;
-  }
-  .navbar-toggler-icon {
-    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba%28255,255,255,1%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
-  }
-</style>
-  </head>
-  <body>
-    <header>
-  <nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">工藤晴香-粉絲自製粉專</a>
-      <button class="navbar-toggler" type="button" 
-              data-bs-toggle="collapse" 
-              data-bs-target="#navbarSupportedContent"
-              aria-controls="navbarSupportedContent" 
-              aria-expanded="false" 
-              aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link active" aria-current="page" href="index.html">首頁</a></li>
-          <li class="nav-item"><a class="nav-link" href="人物介紹.html">人物介紹</a></li>
-          <li class="nav-item"><a class="nav-link" href="經歷.html">經歷</a></li>
-          <li class="nav-item"><a class="nav-link" href="作品.html">作品</a></li>
-          <li class="nav-item"><a class="nav-link" href="粉專作者.html">粉專作者</a></li>
-          <li class="nav-item"><a class="nav-link" href="留言區.html">留言區</a></li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-</header>
-
 <div class="container mt-5" style="max-width:700px;">
   <h2 class="text-center mb-4">留言區</h2>
 
@@ -75,7 +20,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAn3Ff0Mv-uVVbm9QmASoF5-YHoTSzhykw",
@@ -94,25 +39,23 @@
   const form = document.getElementById("messageForm");
   const messagesList = document.getElementById("messagesList");
 
-  // ✅ 發送留言（新格式）
+  // 發送留言
   form.addEventListener("submit", e => {
     e.preventDefault();
-
     const name = document.getElementById("name").value.trim();
     const message = document.getElementById("message").value.trim();
-
     if (!name || !message) return;
 
     push(ref(db, "messages"), {
-      name: name,
-      text: message,
-      timestamp: Date.now()
+      name,
+      text: message,       // 新格式
+      timestamp: Date.now() // 新增時間戳
     });
 
     form.reset();
   });
 
-  // ✅ 顯示留言（支援舊資料 + 新資料）
+  // 顯示留言列表（兼容舊資料）
   onValue(ref(db, "messages"), snapshot => {
     messagesList.innerHTML = "";
 
@@ -120,30 +63,32 @@
 
     snapshot.forEach(child => {
       const data = child.val();
-
       messages.push({
+        key: child.key,
         name: data.name || "匿名",
         text: data.text || data.message || "",
         timestamp: data.timestamp || 0
       });
     });
 
-    // ✅ 依時間排序（新 → 舊）
+    // 按時間排序：新 → 舊
     messages.sort((a, b) => b.timestamp - a.timestamp);
 
     messages.forEach(msg => {
       const li = document.createElement("li");
-      li.classList.add("list-group-item");
+      li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-start");
 
       const textDiv = document.createElement("div");
-
-      const strong = document.createElement("strong");
-      strong.textContent = msg.name;
-
-      textDiv.appendChild(strong);
-      textDiv.appendChild(document.createTextNode(": " + msg.text));
-
+      textDiv.innerHTML = `<strong>${msg.name}</strong>: ${msg.text}`;
       li.appendChild(textDiv);
+
+      // 刪除按鈕（管理者用）
+      const delBtn = document.createElement("button");
+      delBtn.classList.add("btn", "btn-sm", "btn-danger");
+      delBtn.textContent = "刪除";
+      delBtn.addEventListener("click", () => remove(ref(db, "messages/" + msg.key)));
+      li.appendChild(delBtn);
+
       messagesList.appendChild(li);
     });
   });
