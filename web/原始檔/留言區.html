@@ -102,10 +102,11 @@
     const name = document.getElementById("name").value.trim();
     const message = document.getElementById("message").value.trim();
     if (!name || !message) return;
-
-    push(ref(db, "messages"), { name, message });
-    form.reset();
-  });
+push(ref(db, "messages"), {
+  name: name,
+  text: message,
+  timestamp: Date.now()
+});
 
   // 🔹 顯示留言列表
   onValue(ref(db, "messages"), snapshot => {
